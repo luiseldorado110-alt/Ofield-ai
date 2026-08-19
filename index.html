@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ofield AI — convierte tus ideas en proyectos organizados. Herramientas gratuitas para estudiantes y creadores.">
+  <title>Ofield AI — Convierte ideas en proyectos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="#">OFIELD<span>AI</span></a>
+    <nav><a href="#herramientas">Herramientas</a><a href="#como-funciona">Cómo funciona</a></nav>
+    <a class="nav-btn" href="#crear">Empezar</a>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="badge">✦ TU IDEA → TU PROYECTO</div>
+      <h1>Convierte una idea<br><span>en algo real.</span></h1>
+      <p>Ofield AI reúne herramientas para transformar ideas de arquitectura, escuela y proyectos personales en resultados claros y organizados.</p>
+      <div class="hero-actions"><a class="primary" href="#crear">Crear mi proyecto <b>→</b></a><a class="secondary" href="#herramientas">Ver herramientas</a></div>
+      <div class="hero-card"><div class="mini-icon">✦</div><div><strong>Tu proyecto empieza aquí</strong><small>Escribe una idea y descubre cómo organizarla.</small></div><span class="arrow">→</span></div>
+    </section>
+    <section id="crear" class="creator">
+      <div><div class="section-tag">01 / CREAR</div><h2>Cuéntanos tu idea.</h2><p>Esta primera versión funciona sin cuentas ni pagos. Escribe un proyecto y Ofield AI preparará una estructura inicial.</p></div>
+      <form id="projectForm" class="form-card"><label for="type">Tipo de proyecto</label><select id="type"><option>Arquitectura</option><option>Proyecto escolar</option><option>Negocio</option><option>Contenido / historia</option><option>Otro proyecto</option></select><label for="idea">¿Qué quieres crear?</label><textarea id="idea" rows="5" placeholder="Ejemplo: una casa de 2 pisos en un terreno de 8 × 20 metros..."></textarea><button class="primary full" type="submit">Generar estructura <b>→</b></button><p id="message" class="message"></p></form>
+    </section>
+    <section id="resultado" class="result hidden"><div class="section-tag">02 / RESULTADO</div><h2>Tu proyecto, organizado.</h2><div id="resultBox"></div></section>
+    <section id="herramientas" class="tools"><div class="section-head"><div><div class="section-tag">03 / HERRAMIENTAS</div><h2>Todo empieza con una buena herramienta.</h2></div><p>La plataforma crecerá con herramientas gratuitas y funciones inteligentes.</p></div><div class="grid"><article><div class="tool-icon">📐</div><h3>Arquitectura</h3><p>Áreas, escalas, medidas, espacios y presupuestos.</p><span>Próximamente</span></article><article><div class="tool-icon">📚</div><h3>Estudiantes</h3><p>Organización de proyectos, documentos y cálculos.</p><span>Próximamente</span></article><article><div class="tool-icon">💡</div><h3>Ideas</h3><p>Convierte una idea inicial en un plan organizado.</p><span>Disponible</span></article><article><div class="tool-icon">📄</div><h3>Documentos</h3><p>Prepara estructuras listas para convertir en documentos.</p><span>Próximamente</span></article></div></section>
+    <section id="como-funciona" class="steps"><div class="section-tag">04 / CÓMO FUNCIONA</div><h2>De idea a proyecto.</h2><div class="step-grid"><div><b>01</b><h3>Escribe</h3><p>Describe lo que quieres crear.</p></div><div><b>02</b><h3>Organiza</h3><p>Obtén una estructura inicial por secciones.</p></div><div><b>03</b><h3>Construye</h3><p>Usa las herramientas para desarrollar el proyecto.</p></div></div></section>
+  </main>
+  <footer><div class="logo">OFIELD<span>AI</span></div><p>Primera versión — Etapa 1</p></footer>
+  <script src="script.js"></script>
+</body>
+</html>
