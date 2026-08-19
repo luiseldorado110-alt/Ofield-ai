@@ -10,14 +10,32 @@ const message=document.getElementById('message');
 const downloadBtn=document.getElementById('downloadBtn');
 const printBtn=document.getElementById('printBtn');
 let lastProject='';
-const templates={
- 'Arquitectura':{goal:'Definir una propuesta espacial clara y viable.',steps:['Analizar terreno y necesidades','Definir programa arquitectónico','Organizar zonas públicas, privadas y de servicio','Establecer medidas y circulaciones','Seleccionar materiales y acabados','Preparar presupuesto y siguientes planos'],resources:['Plano o medidas del terreno','Programa de necesidades','Referencias visuales','Materiales y acabados','Herramienta de dibujo o modelado'],deliverable:'Anteproyecto organizado con programa, criterios, etapas y presupuesto inicial.'},
- 'Proyecto escolar':{goal:'Convertir el tema en un proyecto con objetivos, investigación y entrega final.',steps:['Definir pregunta o problema','Investigar fuentes confiables','Organizar la información','Desarrollar la propuesta','Revisar y corregir','Preparar presentación final'],resources:['Fuentes de información','Material de investigación','Calendario de entrega','Herramientas de edición'],deliverable:'Estructura lista para desarrollar el proyecto escolar.'},
- 'Negocio':{goal:'Convertir la idea en un modelo de negocio sencillo y accionable.',steps:['Definir cliente objetivo','Precisar producto o servicio','Investigar competencia','Calcular costos','Definir precio e ingresos','Crear una estrategia de lanzamiento'],resources:['Presupuesto inicial','Canales de venta','Propuesta de valor','Material promocional'],deliverable:'Plan inicial de negocio con próximos pasos.'},
- 'Contenido / historia':{goal:'Transformar la idea creativa en una estructura de contenido producible.',steps:['Definir concepto y público','Crear personajes o elementos','Dividir la historia en partes','Planear escenas o capítulos','Definir recursos de producción','Preparar publicación'],resources:['Guion o escaleta','Personajes','Locaciones o recursos visuales','Calendario de producción'],deliverable:'Biblia inicial de contenido para comenzar la producción.'},
- 'Otro proyecto':{goal:'Ordenar la idea en objetivos, etapas, recursos y un resultado concreto.',steps:['Definir objetivo','Dividir el trabajo en etapas','Identificar recursos','Estimar costos y tiempo','Ejecutar y revisar','Preparar resultado final'],resources:['Información del proyecto','Recursos disponibles','Presupuesto','Calendario'],deliverable:'Plan de acción inicial.'}
-};
-form.addEventListener('submit',e=>{e.preventDefault();const text=idea.value.trim();if(!text){message.textContent='Escribe primero una idea para tu proyecto.';idea.focus();return;}const t=templates[type.value];const dataSize=size.value.trim()||'No especificado';const dataBudget=budget.value.trim()||'No especificado';const steps=t.steps.map((x,i)=>`<li><strong>${i+1}.</strong> ${x}</li>`).join('');const resources=t.resources.map(x=>`<li>${x}</li>`).join('');const keywords=text.toLowerCase();let extra='';if(type.value==='Arquitectura'&&(keywords.includes('casa')||keywords.includes('vivienda')))extra='<p><strong>Enfoque detectado:</strong> vivienda. Conviene definir número de habitantes, niveles, recámaras, baños, orientación y estacionamiento.</p>';if(type.value==='Negocio')extra='<p><strong>Enfoque recomendado:</strong> validar primero quién pagará, qué problema resuelves y cuánto cuesta conseguir cada cliente.</p>';if(type.value==='Proyecto escolar')extra='<p><strong>Enfoque recomendado:</strong> separar investigación, desarrollo y presentación para que el proyecto sea fácil de revisar.</p>';resultSummary.textContent=`${type.value} · propuesta creada a partir de tu descripción.`;resultBox.innerHTML=`<div class="result-box"><div class="result-section"><h3>Idea analizada</h3><p>${escapeHtml(text)}</p><p><strong>Datos:</strong> ${escapeHtml(dataSize)} · <strong>Presupuesto:</strong> ${escapeHtml(dataBudget)}</p>${extra}</div><div class="result-section"><h3>Objetivo recomendado</h3><p>${t.goal}</p></div><div class="result-section"><h3>Plan de trabajo</h3><ol>${steps}</ol></div><div class="result-section"><h3>Recursos necesarios</h3><ul>${resources}</ul></div><div class="result-section"><h3>Resultado esperado</h3><p>${t.deliverable}</p></div><div class="result-section"><h3>Próximo paso</h3><p>Empieza por definir con precisión el objetivo y reúne los datos que todavía falten. Después puedes desarrollar cada etapa con las futuras herramientas de Ofield AI.</p></div></div>`;lastProject=`OFIELD AI — PROYECTO GENERADO\n\nTipo: ${type.value}\nIdea: ${text}\nDatos: ${dataSize}\nPresupuesto: ${dataBudget}\n\nOBJETIVO\n${t.goal}\n\nPLAN DE TRABAJO\n${t.steps.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nRECURSOS\n${t.resources.map(x=>`- ${x}`).join('\n')}\n\nRESULTADO ESPERADO\n${t.deliverable}`;result.classList.remove('hidden');message.textContent='✓ Propuesta generada.';result.scrollIntoView({behavior:'smooth'});});
+const API_URL='https://ofield-ai-api.luiseldorado110.workers.dev/';
+
+form.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const text=idea.value.trim();
+ if(!text){message.textContent='Escribe primero una idea para tu proyecto.';idea.focus();return;}
+ const details=`Tipo: ${type.value}\nDatos/tamaño: ${size.value.trim()||'No especificado'}\nPresupuesto: ${budget.value.trim()||'No especificado'}\nIdea: ${text}`;
+ message.textContent='✦ Ofield AI está preparando tu proyecto...';
+ const button=form.querySelector('button[type="submit"]');
+ button.disabled=true;button.style.opacity='.6';
+ try{
+   const response=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:details})});
+   const data=await response.json();
+   if(!response.ok||!data.result) throw new Error(data.error||'No se recibió una respuesta.');
+   const answer=data.result;
+   resultSummary.textContent=`${type.value} · propuesta generada con Ofield AI.`;
+   resultBox.innerHTML=`<div class="result-box"><div class="result-section"><h3>Proyecto generado</h3>${formatAnswer(answer)}</div></div>`;
+   lastProject=`OFIELD AI — PROYECTO GENERADO\n\n${answer}`;
+   result.classList.remove('hidden');message.textContent='✓ Proyecto generado correctamente.';result.scrollIntoView({behavior:'smooth'});
+ }catch(error){
+   console.error(error);
+   message.textContent='No pudimos conectar con la IA. Revisa que el Worker esté desplegado e inténtalo de nuevo.';
+ }finally{button.disabled=false;button.style.opacity='1';}
+});
+
 downloadBtn.addEventListener('click',()=>{if(!lastProject)return;const blob=new Blob([lastProject],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ofield-ai-proyecto.txt';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);});
 printBtn.addEventListener('click',()=>{if(!lastProject)return;window.print();});
+function formatAnswer(text){return escapeHtml(text).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');}
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
