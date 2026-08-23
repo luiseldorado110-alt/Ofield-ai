@@ -1,24 +1,68 @@
-const OFIELD_API='https://ofield-ai-api.luiseldorado110-alt.workers.dev/';
-const OFIELD_ARCH=$=>document.getElementById($);
+(() => {
+  const planEl = id => document.getElementById(id);
+  const escPlan = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
-function addConceptPlanTool(){
-  const tools=document.querySelector('.tools .grid');
-  if(!tools||document.getElementById('openConceptPlan')) return;
-  const card=document.createElement('article');
-  card.innerHTML='<div class="tool-icon">📐</div><h3>Plano conceptual</h3><p>Genera una distribución visual orientativa de tu vivienda por niveles.</p><button id="openConceptPlan" class="secondary" type="button">Generar plano</button><span>Disponible</span>';
-  tools.appendChild(card);
-  const panel=document.createElement('div'); panel.id='conceptPlanPanel'; panel.className='budget-panel hidden';
-  panel.innerHTML=`<div class="budget-top"><div><div class="section-tag">ARQUITECTURA / PLANO</div><h3>Generador de plano conceptual</h3><p>Introduce las dimensiones y necesidades. Ofield AI creará una distribución visual orientativa.</p></div><button id="closeConceptPlan" class="secondary" type="button">Cerrar</button></div><div class="form-grid"><div><label for="planL">Frente (m)</label><input id="planL" type="number" min="1" step="0.1" placeholder="8"></div><div><label for="planW">Fondo (m)</label><input id="planW" type="number" min="1" step="0.1" placeholder="20"></div></div><div class="form-grid"><div><label for="planLevels">Niveles</label><select id="planLevels"><option value="1">1 planta</option><option value="2" selected>2 plantas</option><option value="3">3 plantas</option></select></div><div><label for="planRooms">Recámaras</label><input id="planRooms" type="number" min="1" max="8" value="3"></div></div><div class="form-grid"><div><label for="planBaths">Baños</label><input id="planBaths" type="number" min="1" max="6" value="2"></div><div><label for="planCars">Autos</label><input id="planCars" type="number" min="0" max="4" value="2"></div></div><label for="planNeeds">Necesidades adicionales</label><textarea id="planNeeds" rows="4" placeholder="Ej. cocina abierta, patio trasero, lavandería, estudio, terraza..."></textarea><button id="generateConceptPlan" class="primary full" type="button">Generar plano conceptual ✦</button><p id="conceptPlanMessage" class="message"></p><div id="conceptPlanResult"></div>`;
-  document.querySelector('#herramientas')?.appendChild(panel);
-  const open=()=>{panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'center'});};
-  $('openConceptPlan').onclick=open; $('closeConceptPlan').onclick=()=>panel.classList.add('hidden');
-  $('generateConceptPlan').onclick=generateConceptPlan;
-}
-const $=id=>document.getElementById(id);
-function room(level,L,W,rooms,baths,cars,needs){let cells=[];if(level===1){if(cars>0)cells.push(`<div class="plan-room wide"><b>COCHERA</b><small>${cars} auto(s)</small></div>`);cells.push('<div class="plan-room"><b>SALA</b><small>Área social</small></div>','<div class="plan-room"><b>COMEDOR</b><small>Área social</small></div>','<div class="plan-room"><b>COCINA</b><small>Abierta / barra</small></div>','<div class="plan-room"><b>BAÑO</b><small>Completo</small></div>','<div class="plan-room"><b>ESCALERA</b><small>Conexión vertical</small></div>','<div class="plan-room wide"><b>PATIO / SERVICIO</b><small>Iluminación y ventilación</small></div>');}else{for(let i=1;i<=rooms;i++)cells.push(`<div class="plan-room"><b>RECÁMARA ${i}</b><small>Área privada</small></div>`);cells.push(`<div class="plan-room"><b>BAÑO</b><small>Distribución según proyecto</small></div>`,'<div class="plan-room"><b>ESTAR / CIRCULACIÓN</b><small>Área familiar</small></div>');if(needs)cells.push(`<div class="plan-room wide"><b>NECESIDADES</b><small>${esc(needs)}</small></div>`);}return `<div class="concept-floor"><div class="floor-title">PLANTA ${level}</div><div class="plan-grid">${cells.join('')}</div></div>`;}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
-function generateConceptPlan(){const L=Number($('planL').value)||0,W=Number($('planW').value)||0,levels=Number($('planLevels').value),rooms=Number($('planRooms').value),baths=Number($('planBaths').value),cars=Number($('planCars').value),needs=$('planNeeds').value.trim(),msg=$('conceptPlanMessage'),out=$('conceptPlanResult');if(!L||!W){msg.textContent='Ingresa frente y fondo del terreno.';return;}msg.textContent='✦ Generando distribución conceptual...';let floors='';for(let i=1;i<=levels;i++)floors+=room(i,L,W,rooms,baths,cars,needs);out.innerHTML=`<div class="result-box"><h3>Plano conceptual · ${L} × ${W} m</h3><p><strong>Terreno:</strong> ${(L*W).toFixed(2)} m² · <strong>Niveles:</strong> ${levels} · <strong>Recámaras:</strong> ${rooms} · <strong>Baños:</strong> ${baths} · <strong>Autos:</strong> ${cars}</p><div class="concept-plan">${floors}</div><p class="message">⚠️ Es un plano conceptual, no ejecutivo. Las medidas, estructura, instalaciones, orientación, retiros y normativa deben ser revisadas por un profesional.</p><button id="printConceptPlan" class="primary" type="button">▣ Imprimir / Guardar PDF</button></div>`; $('printConceptPlan').onclick=()=>window.print();msg.textContent='✓ Plano conceptual generado.';}
+  function roomPlan(level, rooms, cars, needs) {
+    const cells = [];
+    if (level === 1) {
+      if (cars > 0) cells.push(`<div class="plan-room wide"><b>COCHERA</b><small>${cars} auto(s)</small></div>`);
+      cells.push('<div class="plan-room"><b>SALA</b><small>Área social</small></div>');
+      cells.push('<div class="plan-room"><b>COMEDOR</b><small>Área social</small></div>');
+      cells.push('<div class="plan-room"><b>COCINA</b><small>Abierta / barra</small></div>');
+      cells.push('<div class="plan-room"><b>BAÑO</b><small>Completo</small></div>');
+      cells.push('<div class="plan-room"><b>ESCALERA</b><small>Conexión vertical</small></div>');
+      cells.push('<div class="plan-room wide"><b>PATIO / SERVICIO</b><small>Iluminación y ventilación</small></div>');
+    } else {
+      for (let i = 1; i <= rooms; i++) cells.push(`<div class="plan-room"><b>RECÁMARA ${i}</b><small>Área privada</small></div>`);
+      cells.push('<div class="plan-room"><b>BAÑO</b><small>Distribución conceptual</small></div>');
+      cells.push('<div class="plan-room"><b>ESTAR / CIRCULACIÓN</b><small>Área familiar</small></div>');
+      if (needs) cells.push(`<div class="plan-room wide"><b>NECESIDADES</b><small>${escPlan(needs)}</small></div>`);
+    }
+    return `<div class="concept-floor"><div class="floor-title">PLANTA ${level}</div><div class="plan-grid">${cells.join('')}</div></div>`;
+  }
 
-document.addEventListener('submit',async function(e){if(e.target.id!=='projectForm')return;e.preventDefault();e.stopImmediatePropagation();const form=e.target,idea=OFIELD_ARCH('idea').value.trim(),msg=OFIELD_ARCH('message');if(!idea){msg.textContent='Escribe primero una idea para tu proyecto.';return;}const type=OFIELD_ARCH('type')?.value||'Otro proyecto',size=OFIELD_ARCH('size')?.value||'No especificado',budget=OFIELD_ARCH('budget')?.value||'No especificado',btn=form.querySelector('button[type="submit"]');if(btn)btn.disabled=true;msg.textContent='✦ Ofield AI está preparando tu proyecto arquitectónico detallado...';const prompt=`Eres Ofield AI, asistente especializado en proyectos. Solicitud: Tipo: ${type}; Datos: ${size}; Presupuesto: ${budget}; Idea: ${idea}. Si es arquitectura, incluye nombre, objetivo, terreno, programa arquitectónico con áreas sugeridas, distribución por plantas con medidas aproximadas, área construida y libre, iluminación, ventilación, fachada, materiales, sistema constructivo, instalaciones básicas, presupuesto por partidas, plan de trabajo, riesgos, permisos, próximos pasos y Ficha rápida. No presentes cálculos estructurales, instalaciones ni costos como definitivos; marca lo conceptual y lo que requiere revisión profesional. Responde en español.`;try{const r=await fetch(OFIELD_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:prompt})}),d=await r.json();if(!r.ok||!d.result)throw Error();const html=esc(d.result).replace(/^###\s+(.+)$/gm,'<h4>$1</h4>').replace(/^##\s+(.+)$/gm,'<h3>$1</h3>').replace(/^#\s+(.+)$/gm,'<h2>$1</h2>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');OFIELD_ARCH('resultSummary').textContent=`${type} · proyecto detallado generado con Ofield AI.`;OFIELD_ARCH('resultBox').innerHTML=`<div class="result-box"><h3>Proyecto generado</h3><div class="ai-answer">${html}</div></div>`;OFIELD_ARCH('resultado').classList.remove('hidden');OFIELD_ARCH('resultado').scrollIntoView({behavior:'smooth'});msg.textContent='✓ Proyecto generado.';const h=JSON.parse(localStorage.getItem('ofieldProjects')||'[]');h.unshift({type,idea,size,budget,answer:d.result,date:new Date().toLocaleString('es-MX')});localStorage.setItem('ofieldProjects',JSON.stringify(h.slice(0,8)));if(typeof renderHistory==='function')renderHistory();}catch(err){console.error(err);msg.textContent='No pudimos conectar con la IA. Revisa el Worker.'}finally{if(btn)btn.disabled=false;}} ,true);
+  function generatePlan() {
+    const L = Number(planEl('planL')?.value) || 0;
+    const W = Number(planEl('planW')?.value) || 0;
+    const levels = Number(planEl('planLevels')?.value) || 2;
+    const rooms = Number(planEl('planRooms')?.value) || 3;
+    const baths = Number(planEl('planBaths')?.value) || 2;
+    const cars = Number(planEl('planCars')?.value) || 0;
+    const needs = (planEl('planNeeds')?.value || '').trim();
+    const msg = planEl('conceptPlanMessage');
+    const out = planEl('conceptPlanResult');
+    if (!L || !W) { msg.textContent = 'Ingresa frente y fondo del terreno.'; return; }
+    msg.textContent = '✦ Generando distribución conceptual...';
+    let floors = '';
+    for (let i = 1; i <= levels; i++) floors += roomPlan(i, rooms, cars, needs);
+    out.innerHTML = `<div class="result-box"><h3>Plano conceptual · ${L} × ${W} m</h3><p><strong>Terreno:</strong> ${(L * W).toFixed(2)} m² · <strong>Niveles:</strong> ${levels} · <strong>Recámaras:</strong> ${rooms} · <strong>Baños:</strong> ${baths} · <strong>Autos:</strong> ${cars}</p><div class="concept-plan">${floors}</div><p class="message">⚠️ Es un plano conceptual, no ejecutivo. Las medidas, estructura, instalaciones, orientación, retiros y normativa deben ser revisadas por un profesional.</p><button id="printConceptPlan" class="primary" type="button">▣ Imprimir / Guardar PDF</button></div>`;
+    planEl('printConceptPlan').onclick = () => window.print();
+    msg.textContent = '✓ Plano conceptual generado.';
+  }
 
-document.addEventListener('DOMContentLoaded',addConceptPlanTool);
+  function addPlanTool() {
+    const tools = document.querySelector('.tools .grid');
+    const section = document.querySelector('#herramientas');
+    if (!tools || !section || document.getElementById('openConceptPlan')) return;
+
+    const card = document.createElement('article');
+    card.innerHTML = '<div class="tool-icon">📐</div><h3>Plano conceptual</h3><p>Genera una distribución visual orientativa de tu vivienda por niveles.</p><button id="openConceptPlan" class="secondary" type="button">Generar plano</button><span>Disponible</span>';
+    tools.appendChild(card);
+
+    const panel = document.createElement('div');
+    panel.id = 'conceptPlanPanel';
+    panel.className = 'budget-panel hidden';
+    panel.innerHTML = `<div class="budget-top"><div><div class="section-tag">ARQUITECTURA / PLANO</div><h3>Generador de plano conceptual</h3><p>Introduce las dimensiones y necesidades. Ofield AI creará una distribución visual orientativa.</p></div><button id="closeConceptPlan" class="secondary" type="button">Cerrar</button></div><div class="form-grid"><div><label for="planL">Frente (m)</label><input id="planL" type="number" min="1" step="0.1" value="8"></div><div><label for="planW">Fondo (m)</label><input id="planW" type="number" min="1" step="0.1" value="20"></div></div><div class="form-grid"><div><label for="planLevels">Niveles</label><select id="planLevels"><option value="1">1 planta</option><option value="2" selected>2 plantas</option><option value="3">3 plantas</option></select></div><div><label for="planRooms">Recámaras</label><input id="planRooms" type="number" min="1" max="8" value="3"></div></div><div class="form-grid"><div><label for="planBaths">Baños</label><input id="planBaths" type="number" min="1" max="6" value="2"></div><div><label for="planCars">Autos</label><input id="planCars" type="number" min="0" max="4" value="2"></div></div><label for="planNeeds">Necesidades adicionales</label><textarea id="planNeeds" rows="4" placeholder="Ej. cocina abierta, patio trasero, lavandería, estudio, terraza..."></textarea><button id="generateConceptPlan" class="primary full" type="button">Generar plano conceptual ✦</button><p id="conceptPlanMessage" class="message"></p><div id="conceptPlanResult"></div>`;
+    section.appendChild(panel);
+
+    document.getElementById('openConceptPlan').addEventListener('click', () => {
+      panel.classList.remove('hidden');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    document.getElementById('closeConceptPlan').addEventListener('click', () => panel.classList.add('hidden'));
+    document.getElementById('generateConceptPlan').addEventListener('click', generatePlan);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addPlanTool);
+  else addPlanTool();
+})();
