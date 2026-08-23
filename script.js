@@ -24,8 +24,34 @@ $('closeBudget')?.addEventListener('click',()=>closePanel(budgetPanel));$('addBu
 // Plan de trabajo
 const planPanel=$('planPanel');$('openPlan')?.addEventListener('click',()=>openPanel(planPanel));$('closePlan')?.addEventListener('click',()=>closePanel(planPanel));$('generatePlan')?.addEventListener('click',async()=>{const idea=$('planIdea').value.trim();const msg=$('planMessage');if(!idea){msg.textContent='Escribe primero qué quieres realizar.';return}msg.textContent='✦ Ofield AI está creando tu plan...';$('generatePlan').disabled=true;try{const prompt=`Crea un plan de trabajo personalizado para: ${idea}\nTiempo: ${$('planTime').value||'no especificado'}\nPresupuesto: ${$('planBudget').value||'no especificado'}\nIncluye etapas, tareas, tiempos, recursos, costos, riesgos y próximos pasos. En español.`;const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:prompt})});const d=await r.json();if(!r.ok||!d.result)throw Error();$('planResult').innerHTML=formatAnswer(d.result);msg.textContent='✓ Plan generado.'}catch(e){msg.textContent='No se pudo generar el plan.'}finally{$('generatePlan').disabled=false}});
 
-// Materiales
-const materialsPanel=$('materialsPanel');$('openMaterials')?.addEventListener('click',()=>openPanel(materialsPanel));$('closeMaterials')?.addEventListener('click',()=>closePanel(materialsPanel));$('calculateMaterials')?.addEventListener('click',()=>{const L=Number($('matLength').value)||0,W=Number($('matWidth').value)||0,H=Number($('matHeight').value)||0,O=Number($('matOpenings').value)||0;if(L<=0||W<=0||H<=0){$('materialsResult').innerHTML='<strong>Ingresa largo, ancho y altura mayores que cero.</strong>';return}const wall=Math.max(0,2*(L+W)*H-O),blocks=Math.ceil(wall*12.5*1.08),mortar=wall*.02*1.1,slab=L*W*.1;$('materialsResult').innerHTML=`<h3>Estimación inicial</h3><p><strong>Área de muros:</strong> ${wall.toFixed(2)} m²</p><p><strong>Block:</strong> ${blocks.toLocaleString('es-MX')} piezas aprox.</p><p><strong>Mortero:</strong> ${mortar.toFixed(2)} m³ aprox.</p><p><strong>Concreto para losa de 10 cm:</strong> ${slab.toFixed(2)} m³ aprox.</p><small>⚠️ Estimación orientativa; requiere revisión profesional.</small>`});
+// Materiales: cantidades + costos orientativos + descarga de presupuesto
+const materialsPanel=$('materialsPanel');
+let lastMaterialsBudget='';
+$('openMaterials')?.addEventListener('click',()=>openPanel(materialsPanel));
+$('closeMaterials')?.addEventListener('click',()=>closePanel(materialsPanel));
+$('calculateMaterials')?.addEventListener('click',()=>{
+  const L=Number($('matLength').value)||0,W=Number($('matWidth').value)||0,H=Number($('matHeight').value)||0,O=Number($('matOpenings').value)||0;
+  const out=$('materialsResult');
+  if(L<=0||W<=0||H<=0){out.innerHTML='<strong>Ingresa largo, ancho y altura mayores que cero.</strong>';return}
+  const wall=Math.max(0,2*(L+W)*H-O);
+  const blocks=Math.ceil(wall*12.5*1.08);
+  const mortar=wall*.02*1.1;
+  const slab=L*W*.10;
+  // Referencias editables: los precios reales cambian según ciudad, proveedor, marca y volumen.
+  const cementMortarBags=Math.ceil(mortar*6);
+  const sandMortar=mortar*1.05;
+  const cementConcreteBags=Math.ceil(slab*8);
+  const sandConcrete=slab*.56;
+  const gravelConcrete=slab*.84;
+  const totalCement=cementMortarBags+cementConcreteBags;
+  const prices={block:14,cement:300,sand:650,gravel:750};
+  const costs={block:blocks*prices.block,cement:totalCement*prices.cement,sand:(sandMortar+sandConcrete)*prices.sand,gravel:gravelConcrete*prices.gravel};
+  const total=Object.values(costs).reduce((a,b)=>a+b,0);
+  const area=L*W;
+  lastMaterialsBudget=`OFIELD AI — PRESUPUESTO ORIENTATIVO DE MATERIALES\n\nÁrea: ${area.toFixed(2)} m²\nMuros: ${wall.toFixed(2)} m²\nLosa de 10 cm: ${slab.toFixed(2)} m³\n\nBlock: ${blocks} piezas\nCemento: ${totalCement} bultos de 50 kg aprox.\nArena: ${(sandMortar+sandConcrete).toFixed(2)} m³ aprox.\nGrava: ${gravelConcrete.toFixed(2)} m³ aprox.\n\nCosto orientativo de materiales: ${money(total)}\n\nPrecios de referencia usados: block ${money(prices.block)}/pieza, cemento ${money(prices.cement)}/bulto, arena ${money(prices.sand)}/m³, grava ${money(prices.gravel)}/m³.\n\nNOTA: No sustituye un cálculo estructural ni una cotización local. Los consumos y precios deben verificarse antes de comprar. La varilla y otros elementos estructurales requieren proyecto y cálculo profesional.`;
+  out.innerHTML=`<h3>Estimación de materiales</h3><p><strong>Área:</strong> ${area.toFixed(2)} m² · <strong>Muros:</strong> ${wall.toFixed(2)} m²</p><div class="budget-materials-grid"><p>🧱 <strong>Block:</strong><br>${blocks.toLocaleString('es-MX')} piezas</p><p>🪣 <strong>Cemento:</strong><br>${totalCement} bultos aprox.</p><p>🏖️ <strong>Arena:</strong><br>${(sandMortar+sandConcrete).toFixed(2)} m³ aprox.</p><p>🪨 <strong>Grava:</strong><br>${gravelConcrete.toFixed(2)} m³ aprox.</p><p>🏗️ <strong>Concreto para losa:</strong><br>${slab.toFixed(2)} m³ aprox.</p><p>💰 <strong>Materiales:</strong><br>${money(total)}</p></div><div class="result-box"><h3>Costo orientativo</h3><p>Block: ${money(costs.block)} · Cemento: ${money(costs.cement)} · Arena: ${money(costs.sand)} · Grava: ${money(costs.gravel)}</p><small>Precios de referencia editables en el código. Pueden variar por ciudad, proveedor y fecha.</small></div><button id="downloadMaterials" class="secondary" type="button">↓ Descargar presupuesto</button><p class="message">⚠️ Estimación orientativa. La varilla, cimentación y estructura deben definirse con cálculo profesional.</p>`;
+  $('downloadMaterials')?.addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lastMaterialsBudget],{type:'text/plain;charset=utf-8'}));a.download='ofield-ai-presupuesto-materiales.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+});
 
 // Analizador de viabilidad — corregido y sin depender de código inline
 const feasibilityPanel=$('feasibilityPanel');
