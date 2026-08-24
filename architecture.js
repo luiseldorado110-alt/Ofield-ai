@@ -1,13 +1,12 @@
 (() => {
-  const load = (src, key, next) => {
-    if (window[key]) { next?.(); return; }
-    window[key] = true;
+  const start = () => {
+    const old = document.querySelector('script[data-ofield-plan-cad]');
+    if (old) old.remove();
     const s = document.createElement('script');
-    s.src = src;
-    s.defer = false;
-    s.onload = () => next?.();
+    s.src = 'plan-cad.js?v=4';
+    s.setAttribute('data-ofield-plan-cad','1');
+    s.onload = () => window.dispatchEvent(new Event('ofield-plan-ready'));
     document.head.appendChild(s);
   };
-  const start = () => load('plan-cad.js?v=3', '__ofieldPlanCadLoaded', () => load('corridor-cad.js?v=1', '__ofieldCorridorLoaded'));
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
