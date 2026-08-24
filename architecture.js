@@ -13,16 +13,17 @@
     if(msg)msg.textContent='✦ Ofield AI está diseñando como arquitecto: analizando terreno, zonificación y circulación...';if(btn)btn.disabled=true;
     try{const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:architecturePrompt({idea,size,budget,type})})});const d=await r.json();if(!r.ok||!d.result)throw new Error('No hubo respuesta de la IA');
       document.getElementById('resultSummary').textContent='Arquitectura · propuesta conceptual profesional.';
-      document.getElementById('resultBox').innerHTML=`<div class="result-box"><h3>Proyecto arquitectónico conceptual</h3><div class="ai-answer">${format(d.result)}</div></div>`;
+      document.getElementById('resultBox').innerHTML=`<div class="result-box"><h3>Proyecto arquitectónico conceptual</h3><div class="ai-answer">${format(d.result)}</div><div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap"><button id="generatePlanFromProject" class="primary" type="button">📐 Generar plano con esta propuesta ✦</button></div></div>`;
+      if(window.__ofieldSetArchitectBrief)window.__ofieldSetArchitectBrief({brief:d.result,idea,size,budget,type});
+      document.getElementById('generatePlanFromProject')?.addEventListener('click',()=>window.__ofieldOpenAIPlan?.());
       document.getElementById('resultado').classList.remove('hidden');document.getElementById('resultado').scrollIntoView({behavior:'smooth'});
       const h=JSON.parse(localStorage.getItem('ofieldProjects')||'[]');h.unshift({type,idea,size,budget,answer:d.result,date:new Date().toLocaleString('es-MX')});localStorage.setItem('ofieldProjects',JSON.stringify(h.slice(0,8)));
-      if(msg)msg.textContent='✓ Propuesta arquitectónica generada.';
+      if(msg)msg.textContent='✓ Propuesta arquitectónica generada. Ahora puedes convertirla en plano con IA.';
     }catch(err){console.error('[Ofield AI arquitectura]',err);if(msg)msg.textContent='No se pudo generar la propuesta arquitectónica. Revisa la conexión con el Worker.';}finally{if(btn)btn.disabled=false;}
   }
   document.addEventListener('submit',handleArchitectureSubmit,true);
-  const attach=()=>{const button=document.getElementById('openConceptPlan');if(!button)return false;button.removeAttribute('onclick');button.dataset.ofieldBound='1';button.onclick=e=>{e.preventDefault();e.stopImmediatePropagation();const panel=document.getElementById('conceptPlanPanel');if(panel){panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'center');}};return false;};return true;};
   const loadScript=(src,key,after)=>{if(window[key]){after?.();return;}window[key]=true;const script=document.createElement('script');script.src=src;script.defer=false;script.onload=()=>after?.();script.onerror=()=>console.error('[Ofield AI] No se pudo cargar:',src);document.head.appendChild(script);};
   const cleanLegacy=()=>{document.querySelectorAll('script[src*="plan-smart.js"],script[src*="plan-cad.js"],script[src*="corridor-cad.js"]').forEach(s=>s.remove());document.querySelectorAll('#conceptPlanPanel').forEach((panel,i)=>{if(i>0)panel.remove();});};
-  const start=()=>{cleanLegacy();attach();loadScript('history-budget.js?v=4','__ofieldHistoryBudgetLoaded',()=>{loadScript('professional-plan.js?v=6','__ofieldProfessionalPlanLoaded',()=>{attach();});});let attempts=0;const retry=()=>{if(attach()||attempts++>=40)return;setTimeout(retry,200)};retry();};
+  const start=()=>{cleanLegacy();loadScript('history-budget.js?v=5','__ofieldHistoryBudgetLoaded',()=>{loadScript('ai-architect-plan.js?v=1','__ofieldAIArchitectPlanLoaded',()=>{});});};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
