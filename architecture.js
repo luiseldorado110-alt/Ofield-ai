@@ -1,11 +1,13 @@
 (() => {
-  const loadPlanCad = () => {
-    if (window.__ofieldPlanCadLoaded) return;
-    window.__ofieldPlanCadLoaded = true;
+  const load = (src, key, next) => {
+    if (window[key]) { next?.(); return; }
+    window[key] = true;
     const s = document.createElement('script');
-    s.src = 'plan-cad.js?v=2';
+    s.src = src;
     s.defer = false;
+    s.onload = () => next?.();
     document.head.appendChild(s);
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadPlanCad); else loadPlanCad();
+  const start = () => load('plan-cad.js?v=3', '__ofieldPlanCadLoaded', () => load('corridor-cad.js?v=1', '__ofieldCorridorLoaded'));
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
