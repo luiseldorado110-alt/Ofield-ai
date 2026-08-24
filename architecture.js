@@ -1,68 +1,60 @@
 (() => {
   'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
-  const attach = () => {
-    const button = document.getElementById('openConceptPlan');
-    if (!button) return false;
-
-    button.removeAttribute('onclick');
-    button.dataset.ofieldBound = '1';
-    button.onclick = (event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (typeof window.__ofieldOpenPlan === 'function') {
-        window.__ofieldOpenPlan();
-        return;
-      }
-      const panel = document.getElementById('conceptPlanPanel');
-      if (panel) {
-        panel.classList.remove('hidden');
-        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    };
-    return true;
-  };
-
-  const loadScript = (src, key, after) => {
-    if (window[key]) {
-      after?.();
-      return;
+  function styles(){
+    if($('ofield-plan-auto-style')) return;
+    const s=document.createElement('style');
+    s.id='ofield-plan-auto-style';
+    s.textContent=`#conceptPlanPanel.ofield-plan-auto{background:#151515;color:#eee}.ofield-plan-auto .h{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.ofield-plan-auto .g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ofield-plan-auto label{display:block;margin:10px 0 6px;font-size:13px;font-weight:700}.ofield-plan-auto input,.ofield-plan-auto select,.ofield-plan-auto textarea{width:100%;box-sizing:border-box;background:#202020;color:#eee;border:1px solid #444;border-radius:9px;padding:11px}.ofield-plan-auto input:focus,.ofield-plan-auto select:focus,.ofield-plan-auto textarea:focus{outline:2px solid #caa74a;border-color:#caa74a}.ofield-plan-auto .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.ofield-plan-auto .wrap{margin-top:18px;background:#383838;border:1px solid #555;border-radius:12px;padding:18px;overflow:auto}.ofield-plan-auto .sheet{background:#fff;color:#111;width:1080px;margin:auto;padding:18px;font-family:Arial,Helvetica,sans-serif}.ofield-plan-auto svg{display:block;width:100%;height:auto}.ppa-t{font-size:20px;font-weight:800;text-anchor:middle}.ppa-s{font-size:10px;fill:#555;text-anchor:middle}.ppa-l{font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:middle}.ppa-sm{font-size:8px;fill:#555;text-anchor:middle}.ppa-wall{fill:#fff;stroke:#111;stroke-width:10}.ppa-room{fill:#fff;stroke:#111;stroke-width:5}.ppa-line{fill:none;stroke:#777;stroke-width:1.2}.ppa-door{fill:none;stroke:#111;stroke-width:1.5}.ppa-win{stroke:#1b78a6;stroke-width:5}.ppa-f{fill:#fafafa;stroke:#666;stroke-width:1}.ppa-fix{fill:#f0f0f0;stroke:#555;stroke-width:1}.ppa-g{fill:#eaf4df;stroke:#6a8f42;stroke-width:1.4;stroke-dasharray:4 3}.ppa-p{fill:none;stroke:#6a8f42;stroke-width:2}.ppa-d{fill:none;stroke:#333;stroke-width:1}.ppa-dt{font-size:10px;font-weight:700;text-anchor:middle}.ppa-a{font-size:9px;font-weight:700;text-anchor:middle;fill:#555}.ppa-note{font-size:9px;fill:#555}.tb{border:2px solid #111;margin-top:10px;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr}.tb div{border-right:1px solid #111;padding:7px;font-size:10px}.tb div:last-child{border-right:0}.area{margin-top:12px;border-collapse:collapse;width:100%;background:#fff;color:#111;font-size:11px}.area th,.area td{border:1px solid #999;padding:6px}.area th{background:#eee}.msgbad{background:#3b1e1e;border:1px solid #8b3d3d;padding:10px;border-radius:8px;color:#ffdede}@media(max-width:700px){.ofield-plan-auto .g{grid-template-columns:1fr}.ofield-plan-auto .sheet{width:960px}}@media print{body *{visibility:hidden!important}#conceptPlanPanel,#conceptPlanPanel *{visibility:visible!important}#conceptPlanPanel{position:absolute!important;left:0;top:0;width:100%!important;background:#fff!important}.ofield-plan-auto .wrap{background:#fff!important;border:0!important;padding:0!important;overflow:visible!important}.ofield-plan-auto .sheet{width:100%!important}}`;
+    document.head.appendChild(s);
+  }
+  const line=(a,b,c,d,k='ppa-line')=>`<line class="${k}" x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`;
+  const rect=(x,y,w,h,k='ppa-f')=>`<rect class="${k}" x="${x}" y="${y}" width="${Math.max(1,w)}" height="${Math.max(1,h)}"/>`;
+  const txt=(x,y,t,k='ppa-l')=>`<text class="${k}" x="${x}" y="${y}">${esc(t)}</text>`;
+  const room=(x,y,w,h,n,sub='')=>`${rect(x,y,w,h,'ppa-room')}${txt(x+w/2,y+h/2-3,n)}${sub?txt(x+w/2,y+h/2+10,sub,'ppa-sm'):''}`;
+  const door=(x,y,r=24)=>`${line(x,y,x+r,y,'ppa-door')}<path class="ppa-door" d="M ${x} ${y} A ${r} ${r} 0 0 1 ${x+r} ${y-r}"/>`;
+  const win=(x,y,w)=>line(x,y,x+w,y,'ppa-win');
+  const winV=(x,y,h)=>line(x,y,x,y+h,'ppa-win');
+  const bed=(x,y)=>`${rect(x,y,64,40)}${line(x,y+12,x+64,y+12)}${rect(x+5,y+4,22,8)}${rect(x+37,y+4,22,8)}`;
+  const sofa=(x,y)=>rect(x,y,80,34);
+  const dining=(x,y)=>`${rect(x,y,58,30)}<circle class="ppa-f" cx="${x-9}" cy="${y+15}" r="5"/><circle class="ppa-f" cx="${x+67}" cy="${y+15}" r="5"/>`;
+  const car=(x,y)=>`${rect(x,y,48,82)}<circle class="ppa-f" cx="${x+10}" cy="${y+68}" r="5"/><circle class="ppa-f" cx="${x+38}" cy="${y+68}" r="5"/>`;
+  const tree=(x,y)=>`<circle class="ppa-p" cx="${x}" cy="${y}" r="13"/><circle class="ppa-p" cx="${x-7}" cy="${y+3}" r="8"/><circle class="ppa-p" cx="${x+7}" cy="${y+3}" r="8"/>`;
+  const garden=(x,y,w,h,label)=>`${rect(x,y,w,h,'ppa-g')}${txt(x+w/2,y+h/2,label,'ppa-sm')}${tree(x+22,y+22)}${tree(x+w-22,y+h-22)}`;
+  const kitchen=(x,y,w)=>rect(x,y,w,22);
+  function floor(level,L,W,rooms,baths,cars,needs,roof=false){
+    const X=110,Y=90,PW=410,PH=Math.max(480,Math.min(610,PW*(W/L)*0.72));
+    let s=`<svg viewBox="0 0 1000 780"><rect width="1000" height="780" fill="#fff"/>${txt(520,28,roof?'PLANTA ROOF GARDEN':'PLANTA '+level,'ppa-t')}${txt(520,47,`${L.toFixed(2)} × ${W.toFixed(2)} m · CONCEPTO RESIDENCIAL`,'ppa-s')}`;
+    for(let i=0;i<=4;i++){const xx=X+PW*i/4;s+=`<circle cx="${xx}" cy="${Y-60}" r="10" fill="#fff" stroke="#555"/>${txt(xx,Y-57,String(i+1),'ppa-a')}`}
+    s+=`<circle cx="900" cy="65" r="10" fill="#fff" stroke="#555"/>${txt(900,68,'N','ppa-a')}${line(900,90,900,45)}<path d="M900 40 L893 54 L907 54 Z" fill="#111"/>`;
+    s+=line(X,Y-25,X+PW,Y-25,'ppa-d')+txt(X+PW/2,Y-33,L.toFixed(2)+' m','ppa-dt')+line(X-28,Y,X-28,Y+PH,'ppa-d')+`<text class="ppa-dt" transform="translate(${X-40},${Y+PH/2}) rotate(-90)">${W.toFixed(2)} m</text>`+rect(X,Y,PW,PH,'ppa-wall');
+    const t=(needs||'').toLowerCase();
+    if(roof){s+=garden(X+8,Y+8,PW-16,PH-16,'ROOF GARDEN')+room(X+140,Y+100,130,115,'TERRAZA')+room(X+285,Y+245,95,100,'PÉRGOLA')+room(X+85,Y+385,110,110,'SERVICIO')+room(X+215,Y+385,110,110,'ESCALERA / VACÍO')+dining(X+175,Y+145);}
+    else if(level===1){
+      const top=Y+42,lx=X+28,lw=175,rx=X+235,rw=145;
+      s+=garden(X+5,Y+5,120,95,'JARDÍN')+garden(X+290,Y+5,115,75,'JARDÍN')+garden(X+5,Y+PH-78,PW-10,65,'JARDÍN');
+      s+=room(lx,top,lw,175,'COCINA',t.includes('cocina abierta')?'ABIERTA':'')+kitchen(lx+25,top+25,lw-50)+room(lx,top+180,lw,145,'COMEDOR')+dining(lx+54,top+220)+room(lx,top+330,lw,135,'SALA')+sofa(lx+45,top+375);
+      s+=room(rx,top,rw,115,'BAÑO')+room(rx,top+121,rw,150,'RECÁMARA 1')+bed(rx+40,top+175)+winV(rx+rw-3,top+155,55)+room(rx,top+276,rw,150,'RECÁMARA 2')+bed(rx+40,top+330)+winV(rx+rw-3,top+310,55);
+      s+=room(X+255,top+112,85,65,'VESTÍBULO')+room(X+205,top+190,50,260,'PASILLO','1.20 m')+room(X+260,top+405,92,110,t.includes('estudio')?'ESTUDIO':'ESCALERA ↑')+room(X+355,top+405,50,110,'BAÑO');
+      s+=door(X+205,top+195)+door(X+255,top+138)+door(rx,top+121)+door(rx,top+276)+win(lx+20,top+170,70)+win(lx+20,top+300,70)+win(lx+20,top+450,70)+winV(rx+rw,top+25,60);
+      s+=rect(X+145,Y+PH-28,120,22,'ppa-f')+txt(X+205,Y+PH+17,'ACCESO PRINCIPAL','ppa-sm');
+      if(cars){for(let i=0;i<Math.min(cars,2);i++)s+=car(X+30+i*58,Y+PH-160);s+=txt(X+82,Y+PH-172,'COCHERA','ppa-sm');}
+    }else{
+      const rx=X+220,rw=150,top=Y+35;
+      s+=garden(X+5,Y+5,PW-10,55,'JARDÍN / VACÍO')+room(X+15,top,160,80,'VESTÍBULO')+room(X+185,top,45,410,'PASILLO','1.20 m');
+      const count=Math.max(1,rooms);for(let i=0;i<count;i++){const yy=top+i*112;s+=room(rx,yy,rw,105,'RECÁMARA '+(i+1))+bed(rx+42,yy+45)+winV(rx+rw-3,yy+25,52)+(i?door(rx,yy):'');}
+      s+=room(X+15,top+92,160,105,'BAÑO 1');if(baths>1)s+=room(X+15,top+210,160,105,'BAÑO 2');s+=room(X+15,top+328,160,100,t.includes('estudio')?'ESTUDIO':'ESTAR FAMILIAR')+room(X+15,top+440,160,90,t.includes('terraza')?'TERRAZA':'SERVICIO')+garden(X+8,Y+PH-70,PW-16,55,'JARDÍN');
     }
-    window[key] = true;
-    const script = document.createElement('script');
-    script.src = src;
-    script.defer = false;
-    script.onload = () => after?.();
-    script.onerror = () => console.error('[Ofield AI] No se pudo cargar:', src);
-    document.head.appendChild(script);
-  };
-
-  const cleanLegacy = () => {
-    document.querySelectorAll('script[src*="plan-smart.js"],script[src*="plan-cad.js"],script[src*="corridor-cad.js"]').forEach(s => s.remove());
-    document.querySelectorAll('#conceptPlanPanel').forEach((panel, i) => {
-      if (i > 0) panel.remove();
-    });
-  };
-
-  const start = () => {
-    cleanLegacy();
-    attach();
-    loadScript('history-budget.js?v=3', '__ofieldHistoryBudgetLoaded', () => {
-      loadScript('professional-plan.js?v=5', '__ofieldProfessionalPlanLoaded', () => {
-        if (typeof window.__ofieldBuildPlan === 'function') window.__ofieldBuildPlan();
-        if (typeof window.__ofieldOpenPlan === 'function') window.__ofieldOpenPlan.attach?.();
-        attach();
-      });
-    });
-
-    let attempts = 0;
-    const retry = () => {
-      if (attach() || attempts++ >= 30) return;
-      setTimeout(retry, 200);
-    };
-    retry();
-  };
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
-  else start();
+    return s+txt(520,740,'OFIELD AI · PLANO CONCEPTUAL · NO EJECUTIVO','ppa-note')+`</svg>`;
+  }
+  function panel(){styles();let p=$('conceptPlanPanel');if(p&&p.dataset.autoReady==='1')return p;if(!p){const sec=$('herramientas');if(!sec)return null;p=document.createElement('section');p.id='conceptPlanPanel';sec.appendChild(p);}p.className='budget-panel ofield-plan-auto';p.dataset.autoReady='1';p.innerHTML=`<div class="h"><div><div class="section-tag">ARQUITECTURA / PLANO CONCEPTUAL</div><h3>Generador de plano arquitectónico</h3><p>Distribución residencial con jardines, acceso, vestíbulo, pasillos, recámaras, baños, mobiliario y cotas.</p></div><button id="ppaClose" class="secondary" type="button">Cerrar</button></div><div class="g"><div><label>Frente del terreno (m)</label><input id="ppaL" type="number" min="3" step="0.1" value="8"></div><div><label>Fondo del terreno (m)</label><input id="ppaW" type="number" min="5" step="0.1" value="20"></div><div><label>Niveles</label><select id="ppaLevels"><option value="1">1 planta</option><option value="2" selected>2 plantas</option><option value="3">2 plantas + roof garden</option></select></div><div><label>Recámaras</label><input id="ppaRooms" type="number" min="1" max="6" value="3"></div><div><label>Baños</label><input id="ppaBaths" type="number" min="1" max="5" value="2"></div><div><label>Autos</label><input id="ppaCars" type="number" min="0" max="3" value="2"></div></div><label>Necesidades especiales</label><textarea id="ppaNeeds" rows="3" placeholder="Cocina abierta, patio, lavandería, estudio, terraza, jardín..."></textarea><div class="tools"><button id="ppaGenerate" class="primary" type="button">Generar plano ✦</button><button id="ppaPrint" class="secondary" type="button">▣ Guardar PDF</button><button id="ppaSave" class="secondary" type="button">＋ Guardar plano</button></div><p id="ppaStatus" class="message"></p><div id="ppaResult"></div>`;
+    $('ppaClose').onclick=()=>p.classList.add('hidden');$('ppaGenerate').onclick=generate;$('ppaPrint').onclick=()=>window.print();$('ppaSave').onclick=save;return p;}
+  function openPanel(){const p=panel();if(!p)return;p.classList.remove('hidden');p.scrollIntoView({behavior:'smooth',block:'center'});}
+  function generate(){const p=panel(),L=Number($('ppaL').value),W=Number($('ppaW').value),levels=Number($('ppaLevels').value),rooms=Number($('ppaRooms').value),baths=Number($('ppaBaths').value),cars=Number($('ppaCars').value),needs=$('ppaNeeds').value.trim(),msg=$('ppaStatus'),out=$('ppaResult');if(!(L>=3&&W>=5)){msg.textContent='Ingresa medidas válidas: mínimo 3 m de frente y 5 m de fondo.';return;}msg.textContent='✦ Generando plano...';try{const count=levels===3?2:levels;let sheets='';for(let i=1;i<=count;i++)sheets+=`<div class="sheet">${floor(i,L,W,rooms,baths,cars,needs)}</div>`;if(levels===3)sheets+=`<div class="sheet">${floor(3,L,W,rooms,baths,cars,needs,true)}</div>`;const area=L*W;out.innerHTML=`<div class="wrap">${sheets}</div><div class="tb"><div><b>PROYECTO</b><br>OFIELD AI</div><div><b>TERRENO</b><br>${L.toFixed(2)} × ${W.toFixed(2)} m</div><div><b>ESCALA</b><br>Referencial 1:100</div><div><b>ESTADO</b><br>CONCEPTUAL</div></div><table class="area"><tr><th>Cuadro de datos</th><th>Valor</th></tr><tr><td>Superficie</td><td>${area.toFixed(2)} m²</td></tr><tr><td>Niveles</td><td>${levels===3?'2 + Roof Garden':levels}</td></tr><tr><td>Recámaras</td><td>${rooms}</td></tr><tr><td>Baños</td><td>${baths}</td></tr><tr><td>Cochera</td><td>${cars} auto(s)</td></tr></table>`;out.dataset.plan=JSON.stringify({L,W,levels,rooms,baths,cars,needs,created:new Date().toISOString()});msg.textContent='✓ Plano generado correctamente.';}catch(err){console.error(err);msg.innerHTML='<div class="msgbad">Error al generar el plano. Revisa la consola del navegador.</div>';}}
+  function save(){const r=$('ppaResult'),m=$('ppaStatus');if(!r?.dataset.plan){m.textContent='Genera un plano primero.';return;}let a=[];try{a=JSON.parse(localStorage.getItem('ofield_plans')||'[]')}catch{}a.unshift(JSON.parse(r.dataset.plan));localStorage.setItem('ofield_plans',JSON.stringify(a.slice(0,20)));m.textContent='✓ Plano guardado.';}
+  function bind(){const b=$('openConceptPlan');if(!b)return false;b.removeAttribute('onclick');b.onclick=e=>{e.preventDefault();e.stopPropagation();openPanel();};return true;}
+  function boot(){styles();document.querySelectorAll('script[src*="plan-smart.js"],script[src*="plan-cad.js"],script[src*="corridor-cad.js"]').forEach(s=>s.remove());panel();bind();setTimeout(bind,100);setTimeout(bind,500);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
