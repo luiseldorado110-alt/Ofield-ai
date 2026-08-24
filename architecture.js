@@ -1,12 +1,12 @@
 (() => {
-  const start = () => {
-    const old = document.querySelector('script[data-ofield-plan-cad]');
-    if (old) old.remove();
+  const load = () => {
+    if (window.__ofieldProfessionalPlanLoaded) return;
+    window.__ofieldProfessionalPlanLoaded = true;
     const s = document.createElement('script');
-    s.src = 'professional-plan.js?v=1';
-    s.setAttribute('data-ofield-plan-professional','1');
-    s.onload = () => window.dispatchEvent(new Event('ofield-plan-ready'));
+    s.src = 'professional-plan.js?v=2';
+    s.defer = false;
+    s.onload = () => window.dispatchEvent(new Event('ofield-professional-plan-ready'));
     document.head.appendChild(s);
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
 })();
