@@ -78,6 +78,10 @@
     const actions=result.querySelector('.result-head .hero-actions');
     if(actions&&!$('openAIEngine')){const b=document.createElement('button');b.id='openAIEngine';b.className='secondary';b.type='button';b.textContent='🧠 Asistente IA';b.onclick=()=>{const p=ensure();p.classList.remove('hidden');p.scrollIntoView({behavior:'smooth',block:'center'});};actions.appendChild(b)}
   }
-  function start(){mountButton();const obs=new MutationObserver(mountButton);obs.observe(document.body,{childList:true,subtree:true});}
+  function start(){
+    mountButton();
+    const obs=new MutationObserver(mountButton);obs.observe(document.body,{childList:true,subtree:true});
+    if(!window.__creativeSuiteLoader){window.__creativeSuiteLoader=true;const s=document.createElement('script');s.src='creative-suite.js?v=1';s.defer=false;s.onload=()=>console.log('[Ofield AI] Creative Studio loaded');s.onerror=()=>console.error('[Ofield AI] Creative Studio failed to load');document.head.appendChild(s);}
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
