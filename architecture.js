@@ -11,14 +11,13 @@
     section.appendChild(panel);
     return panel;
   }
-
   function openPanel() {
     const panel = makePanel();
     if (!panel) return;
     panel.classList.remove('hidden');
     panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-
+  window.openConceptPlanPanel = openPanel;
   function draw() {
     const L = Number(document.getElementById('planL').value) || 0;
     const W = Number(document.getElementById('planW').value) || 0;
@@ -42,7 +41,7 @@
     document.getElementById('printConceptPlan').onclick = () => window.print();
     msg.textContent = '✓ Plano generado.';
   }
-
+  window.generateConceptPlan = draw;
   document.addEventListener('click', e => {
     const open = e.target.closest('#openConceptPlan');
     if (open) { e.preventDefault(); openPanel(); return; }
