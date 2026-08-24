@@ -1,19 +1,44 @@
 (() => {
+  'use strict';
+
+  const attach = () => {
+    const button = document.getElementById('openConceptPlan');
+    if (!button) return false;
+
+    button.removeAttribute('onclick');
+    button.dataset.ofieldBound = '1';
+    button.onclick = (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (typeof window.__ofieldOpenPlan === 'function') {
+        window.__ofieldOpenPlan();
+        return;
+      }
+      const panel = document.getElementById('conceptPlanPanel');
+      if (panel) {
+        panel.classList.remove('hidden');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+    return true;
+  };
+
   const loadScript = (src, key, after) => {
-    if (window[key]) { after?.(); return; }
+    if (window[key]) {
+      after?.();
+      return;
+    }
     window[key] = true;
-    const s = document.createElement('script');
-    s.src = src;
-    s.defer = false;
-    s.onload = () => after?.();
-    s.onerror = () => console.error('[Ofield AI] No se pudo cargar:', src);
-    document.head.appendChild(s);
+    const script = document.createElement('script');
+    script.src = src;
+    script.defer = false;
+    script.onload = () => after?.();
+    script.onerror = () => console.error('[Ofield AI] No se pudo cargar:', src);
+    document.head.appendChild(script);
   };
 
   const cleanLegacy = () => {
     document.querySelectorAll('script[src*="plan-smart.js"],script[src*="plan-cad.js"],script[src*="corridor-cad.js"]').forEach(s => s.remove());
-    const open = document.getElementById('openConceptPlan');
-    if (open) open.removeAttribute('onclick');
     document.querySelectorAll('#conceptPlanPanel').forEach((panel, i) => {
       if (i > 0) panel.remove();
     });
@@ -21,23 +46,21 @@
 
   const start = () => {
     cleanLegacy();
-    loadScript('history-budget.js?v=2', '__ofieldHistoryBudgetLoaded', () => {
-      loadScript('professional-plan.js?v=4', '__ofieldProfessionalPlanLoaded', () => {
-        window.dispatchEvent(new Event('ofield-professional-plan-ready'));
-        const open = document.getElementById('openConceptPlan');
-        if (open && !open.dataset.ofieldBound) {
-          open.dataset.ofieldBound = '1';
-          open.addEventListener('click', e => {
-            e.preventDefault();
-            const panel = document.getElementById('conceptPlanPanel');
-            if (panel) {
-              panel.classList.remove('hidden');
-              panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-          });
-        }
+    attach();
+    loadScript('history-budget.js?v=3', '__ofieldHistoryBudgetLoaded', () => {
+      loadScript('professional-plan.js?v=5', '__ofieldProfessionalPlanLoaded', () => {
+        if (typeof window.__ofieldBuildPlan === 'function') window.__ofieldBuildPlan();
+        if (typeof window.__ofieldOpenPlan === 'function') window.__ofieldOpenPlan.attach?.();
+        attach();
       });
     });
+
+    let attempts = 0;
+    const retry = () => {
+      if (attach() || attempts++ >= 30) return;
+      setTimeout(retry, 200);
+    };
+    retry();
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
